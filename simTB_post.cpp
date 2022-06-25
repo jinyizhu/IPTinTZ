@@ -105,6 +105,7 @@ List sim_pop_analysis(int nPop,
   NumericVector TBcases_by_cal(100);
   NumericVector TBdeaths_by_cal(100);
   NumericVector deaths_by_cal(100);
+  NumericVector TBcases_by_year_INHR(100);
   std::vector<double> LE_vec(nPop, 0); //Life expectancy
   std::vector<double> tobs_vec(nPop, 0); //time observed in model
   std::vector<bool> lost_vec(nPop, 0); // lost to follow-up
@@ -179,7 +180,7 @@ List sim_pop_analysis(int nPop,
     ++rini;
     if(randomnums[rini] <= prev_INHR){
       INHR = 1;
-      IPT_eff_id = 0;
+      IPT_eff_id = 1;
     }
     double prob_IPTcomplete = prob_IPTcomplete_2014 + enr_mo*prob_IPTcomplete_inc;
     if(prob_IPTcomplete > prob_IPTcomplete_2018){prob_IPTcomplete = prob_IPTcomplete_2018;}
@@ -256,74 +257,44 @@ List sim_pop_analysis(int nPop,
       }
       
       //Update IPT efficacy
-      if(INHR == 1){IPT_eff_id = 0;}
+      if(INHR == 1){
+        IPT_eff_id = 1;
+        IPT_cured = 0;}
       
       //Record cycle rewards
       LE_vec[id] += clength;
-      if(artmon + enr_mo - 1 >= 85){//post 2021
-        LE_disc_vec[id] += clength * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-      }else{
-        LE_disc_vec[id] += clength;
-      }
-      
+      LE_disc_vec[id] += clength * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
+
       if(ARTstate == 1){ //if on ART
         cART_vec[id] += c_ART_mo;
-        if(artmon + enr_mo - 1 >= 85){//post 2021
-          cART_disc_vec[id] += c_ART_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-        }else{
-          cART_disc_vec[id] += c_ART_mo;
-        }
+        cART_disc_vec[id] += c_ART_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
         
         if(TBstate == "I_undetected"){
           DALY_vec[id] += DW_TB * clength;
-          if(artmon + enr_mo - 1 >= 85){//post 2021
-            DALY_disc_vec[id] += DW_TB * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-          }else{ 
-            DALY_disc_vec[id] += DW_TB * clength;
+          DALY_disc_vec[id] += DW_TB * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
+          if(IPT== 1){
+            cIPT_vec[id] += c_IPT_mo;
+            cIPT_disc_vec[id] += c_IPT_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
           }
         }else if(TBstate == "I_treating" ){
           DALY_vec[id] += DW_TB * clength;
-          if(artmon + enr_mo - 1 >= 85){//post 2021
-            DALY_disc_vec[id] += DW_TB * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-            DALY_disc_vec[id] += DW_TB * clength;
-          }
-
+          DALY_disc_vec[id] += DW_TB * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
           cTB_vec[id] += c_TBtreat_mo;
-          if(artmon + enr_mo - 1 >= 85){//post 2021
-            cTB_disc_vec[id] += c_TBtreat_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-          }else{
-            cTB_disc_vec[id] += c_TBtreat_mo;
-          }
+          cTB_disc_vec[id] += c_TBtreat_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
         }else{
           DALY_vec[id] += DW_HIV_onART * clength;
-          if(artmon + enr_mo - 1 >= 85){//post 2021
-            DALY_disc_vec[id] += DW_HIV_onART * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-          }else{
-            DALY_disc_vec[id] += DW_HIV_onART * clength;
-          }
+          DALY_disc_vec[id] += DW_HIV_onART * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
           if(IPT== 1){
             cIPT_vec[id] += c_IPT_mo;
-            if(artmon + enr_mo - 1 >= 85){//post 2021
-              cIPT_disc_vec[id] += c_IPT_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-            }else{
-              cIPT_disc_vec[id] += c_IPT_mo;
-            }
+            cIPT_disc_vec[id] += c_IPT_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
           }
         }
       }else{ //if not on ART
         DALY_vec[id] += DW_HIV_offART * clength;
-        if(artmon + enr_mo - 1 >= 85){//post 2021
-          DALY_disc_vec[id] += DW_HIV_offART * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-        }else{
-          DALY_disc_vec[id] += DW_HIV_offART * clength;
-        }
-        if(TBstate == "I_LTF_treating" ){
+        DALY_disc_vec[id] += DW_HIV_offART * clength * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
+        if(TBstate == "I_LTF_treating"){
           cTB_vec[id] += c_TBtreat_mo;
-          if(artmon + enr_mo - 1 >= 85){//post 2021
-            cTB_disc_vec[id] += c_TBtreat_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 1 - 85)/12);
-          }else{
-            cTB_disc_vec[id] += c_TBtreat_mo;
-          }
+          cTB_disc_vec[id] += c_TBtreat_mo * pow(1/(1 + disc_r), (artmon + enr_mo - 2)/12);
         }
       }
       
@@ -461,6 +432,7 @@ List sim_pop_analysis(int nPop,
             
             TBcase_true[id] ++;
             TBcases_by_year[artmon/12] ++;
+            if(INHR == 1){TBcases_by_year_INHR[artmon/12] ++;}
             TBcases_by_cal[(enr_mo + artmon - 1)/12]++;
             
             //DETECTED!!!!
@@ -621,6 +593,7 @@ List sim_pop_analysis(int nPop,
             //get TB again
             TBcase_true[id] ++;
             TBcases_by_year[artmon/12] ++;
+            if(INHR == 1){TBcases_by_year_INHR[artmon/12] ++;}
             TBcases_by_cal[(enr_mo + artmon - 1)/12] ++;
             TBstate = "I_undetected";
             //Age + 1/12 to make the loop running
@@ -664,6 +637,7 @@ List sim_pop_analysis(int nPop,
                 (1 + exp(gamma_vec_par1) * (exp(-exp(gamma_vec_par2)*modelcd4))),1) ){
             TBcase_true[id] ++;
             TBcases_by_year[artmon/12] ++;
+            if(INHR == 1){TBcases_by_year_INHR[artmon/12] ++;}
             TBcases_by_cal[(enr_mo + artmon - 1)/12]++;
             
             //DETECTED!!!!
@@ -730,6 +704,7 @@ List sim_pop_analysis(int nPop,
                 (1 + exp(gamma_vec_par1) * (exp(-exp(gamma_vec_par2)*modelcd4))),1) ){
             TBcase_true[id] ++;
             TBcases_by_year[artmon/12] ++;
+            if(INHR == 1){TBcases_by_year_INHR[artmon/12] ++;}
             TBcases_by_cal[(enr_mo + artmon - 1)/12]++;
             TBstate = "I_LTF";
             //Update CD4
@@ -783,9 +758,8 @@ List sim_pop_analysis(int nPop,
     if (TBdeath[id] == 0){FU_TBdeath[id] = (tobs - age)*12 + 1;}
     
     DALY_vec[id] = DALY_vec[id] + LE_reference[modelage/5];
-    double T1 = (artmon + enr_mo - 1 - 85)/12 ;
-    double T2 = (artmon + enr_mo - 1 - 85)/12 + LE_reference[modelage/5];
-    if(T1 < 0){T1 = 0;}
+    double T1 = (artmon + enr_mo - 2)/12 ;
+    double T2 = (artmon + enr_mo - 2)/12 + LE_reference[modelage/5];
     DALY_disc_vec[id] = DALY_disc_vec[id] + 1/pow((1 + disc_r), T1)*(1 - pow(1/(1+disc_r), T2- T1 + 1))/(1 - 1/(1 + disc_r));
   }
 
@@ -821,55 +795,55 @@ List sim_pop_analysis(int nPop,
   NumericVector TBdeath_true_out(nPop); //True TB death
 
   for(int i=0; i<nPop; i++) { 
-    LE_vec_out(i) = LE_vec[i];
-    tobs_vec_out(i) = tobs_vec[i];
-    lost_vec_out(i) = lost_vec[i];
-    dead_vec_out(i) = dead_vec[i];
-    dead_by_2018_out(i) = dead_by_2018[i];
-    TBcase_out(i) = TBcase[i];
-    FU_TBcase_out(i) = FU_TBcase[i];
-    TBdeath_out(i) = TBdeath[i];
-    FU_TBdeath_out(i) = FU_TBdeath[i];
-    HIVdeath_out(i) = HIVdeath[i];
-    tInf_out(i) = tInf[i];
+    LE_vec_out(i)            = LE_vec[i];
+    tobs_vec_out(i)          = tobs_vec[i];
+    lost_vec_out(i)          = lost_vec[i];
+    dead_vec_out(i)          = dead_vec[i];
+    dead_by_2018_out(i)      = dead_by_2018[i];
+    TBcase_out(i)            = TBcase[i];
+    FU_TBcase_out(i)         = FU_TBcase[i];
+    TBdeath_out(i)           = TBdeath[i];
+    FU_TBdeath_out(i)        = FU_TBdeath[i];
+    HIVdeath_out(i)          = HIVdeath[i];
+    tInf_out(i)              = tInf[i];
     UndetectedTB_base_out(i) = UndetectedTB_base[i];
-    LatentTB_base_out(i) = LatentTB_base[i];
-    LTBI_time_out(i) = LTBI_time[i];
-    DALY_vec_out(i) = DALY_vec[i];
-    cART_vec_out(i) = cART_vec[i];
-    cTB_vec_out(i) = cTB_vec[i];
-    cIPT_vec_out(i) = cIPT_vec[i];
-    tIPT_ART_vec_out(i) = tIPT_ART_vec[i];
-    LE_disc_vec_out(i) = LE_disc_vec[i]; 
-    DALY_disc_vec_out(i) = DALY_disc_vec[i];
-    cART_disc_vec_out(i) = cART_disc_vec[i];
-    cTB_disc_vec_out(i) = cTB_disc_vec[i]; 
-    cIPT_disc_vec_out(i) = cIPT_disc_vec[i];
-    TBcase_true_out(i) = TBcase_true[i]; 
-    TBdeath_true_out(i) = TBdeath_true[i];
+    LatentTB_base_out(i)     = LatentTB_base[i];
+    LTBI_time_out(i)         = LTBI_time[i];
+    DALY_vec_out(i)          = DALY_vec[i];
+    cART_vec_out(i)          = cART_vec[i];
+    cTB_vec_out(i)           = cTB_vec[i];
+    cIPT_vec_out(i)          = cIPT_vec[i];
+    tIPT_ART_vec_out(i)      = tIPT_ART_vec[i];
+    LE_disc_vec_out(i)       = LE_disc_vec[i]; 
+    DALY_disc_vec_out(i)     = DALY_disc_vec[i];
+    cART_disc_vec_out(i)     = cART_disc_vec[i];
+    cTB_disc_vec_out(i)      = cTB_disc_vec[i]; 
+    cIPT_disc_vec_out(i)     = cIPT_disc_vec[i];
+    TBcase_true_out(i)       = TBcase_true[i]; 
+    TBdeath_true_out(i)      = TBdeath_true[i];
   }
   
   return(List::create(
-      Named("LE") = LE_vec_out,
-      Named("DALY") = DALY_vec_out,
-      Named("cART") = cART_vec_out,
-      Named("cTB") = cTB_vec_out,
-      Named("cIPT") = cIPT_vec_out,
-      Named("TBcase_true") = TBcase_true_out,
-      Named("TBdeath_true") = TBdeath_true_out,
-      Named("LE_disc") = LE_disc_vec_out,
-      Named("DALY_disc") = DALY_disc_vec_out,
-      Named("cART_disc") = cART_disc_vec_out,
-      Named("cTB_disc") = cTB_disc_vec_out,
-      Named("cIPT_disc") = cIPT_disc_vec_out,
-      Named("dead_onART") = dead_vec_out,
-      Named("TBcases_by_year") = TBcases_by_year,
-      Named("TBdeaths_by_year") = TBdeaths_by_year,
-      Named("deaths_by_year") = deaths_by_year,
-      Named("TBcases_by_cal") = TBcases_by_cal,
-      Named("TBdeaths_by_cal") = TBdeaths_by_cal,
-      Named("deaths_by_cal") = deaths_by_cal,
-      Named("tIPT_ART") = tIPT_ART_vec_out
+      Named("LE")                   = LE_vec_out,
+      Named("DALY")                 = DALY_vec_out,
+      Named("cART")                 = cART_vec_out,
+      Named("cTB")                  = cTB_vec_out,
+      Named("cIPT")                 = cIPT_vec_out,
+      Named("TBcase_true")          = TBcase_true_out,
+      Named("TBdeath_true")         = TBdeath_true_out,
+      Named("LE_disc")              = LE_disc_vec_out,
+      Named("DALY_disc")            = DALY_disc_vec_out,
+      Named("cART_disc")            = cART_disc_vec_out,
+      Named("cTB_disc")             = cTB_disc_vec_out,
+      Named("cIPT_disc")            = cIPT_disc_vec_out,
+      Named("dead_onART")           = dead_vec_out,
+      Named("TBcases_by_year")      = TBcases_by_year,
+      Named("TBdeaths_by_year")     = TBdeaths_by_year,
+      Named("deaths_by_year")       = deaths_by_year,
+      Named("TBcases_by_cal")       = TBcases_by_cal,
+      Named("TBdeaths_by_cal")      = TBdeaths_by_cal,
+      Named("deaths_by_cal")        = deaths_by_cal,
+      Named("TBcases_by_year_INHR") = TBcases_by_year_INHR
       )
   );
 }
